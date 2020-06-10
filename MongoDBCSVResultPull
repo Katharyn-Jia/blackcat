@@ -1,0 +1,46 @@
+import csv
+
+import os
+import os.path
+from os import path
+
+import argparse
+parser = argparse.ArgumentParser()
+
+#Module require four inputs
+parser.add_argument("connection", help= "connection string")
+parser.add_argument("species", help="the pet species, first letter capitalized")
+parser.add_argument("country", help="the country location of the vendor, 2 letter abbreviation")
+parser.add_argument("region", help="the region of the country")
+args = parser.parse_args()
+
+#Compass filter statement
+from pymongo import MongoClient
+client = MongoClient(args.connection)
+filter={'pet_breeds_handled' : args.species,
+'address.country' : args.country,
+'address.region' : args.region}
+result = client['Petsitters']['Vendors'].find(filter=filter)
+
+#Remove previous results file
+if path.exists("vendor_results.csv"):
+    os.remove("vendor_results.csv")
+
+#check for no results
+had_answers = False
+#iterate through results
+for item in result:
+    had_answers = True
+    business_name = item['business_name']
+    pet_breeds_handled = item['pet_breeds_handled']
+    country = item['address']['country']
+    region = item['address']['region']
+    #debug--use next line if CSV fails to write
+    #print(business_name, pet_breeds_handled, country,region)
+    with open ("vendor_results.csv", "a", newline='') as result_file:
+        result_file.write(f"Business Name: {business_name}\n\tPets Handled: {pet_breeds_handled}\n\t{region}, {country}\n\n")
+if had_answers == False:
+    print("Had Answers:", had_answers)
+else:
+    print("'vendor_results.csv' created")
+
